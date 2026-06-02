@@ -1,0 +1,13 @@
+{
+  "name": "jobra-ingest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Jobra AI job ingestion (Adzuna US+CA → Supabase)",
+  "scripts": {
+    "ingest": "node ingest-adzuna.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

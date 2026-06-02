@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JobraAI: Your Tech & Cyber Job Copilot</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232546E5'/><circle cx='8' cy='8' r='3' fill='white'/><circle cx='24' cy='9' r='3' fill='white'/><circle cx='16' cy='22' r='3' fill='white'/><path d='M10.6 9.6 13.8 20M21.9 11.2 18.6 20.5M10.7 8.5 21.3 8.5' stroke='white' stroke-width='2' stroke-linecap='round'/></svg>">
+
+<!-- ============================================================
+     CONFIG: paste your Supabase values here to go live.
+     Leave them as-is to preview the design in DEMO mode.
+     (anon key is safe to expose; RLS protects your data.
+      AI_REFINE_ENDPOINT is optional. See README for the free setup.)
+============================================================ -->
+<script>
+  const JOBRA_CONFIG = {
+    SUPABASE_URL: "https://cipjecudpxlruuwqsden.supabase.co",
+    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpcGplY3VkcHhscnV1d3FzZGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDQwMzcsImV4cCI6MjA5NTkyMDAzN30.UogSfmnuZrQWtB9X4VZNScATYWtDtSF5C_9Mcv_wH7E",
+    AI_REFINE_ENDPOINT: "",   // optional: your free Gemini/Groq proxy (see README)
+    // Stripe payment links (create in Stripe, paste the URLs here). See README.
+    STRIPE_LINK_MONTHLY: "",    // $50 / month
+    STRIPE_LINK_QUARTERLY: "",  // $105 / 3 months
+    STRIPE_LINK_YEARLY: "",     // $240 / year
+    STRIPE_PORTAL_URL: "",      // Stripe customer portal login link (Manage subscription)
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#FAFAF7; --bg-soft:#F1F1EA; --surface:#FFFFFF;
+  --ink:#17181C; --muted:#6A6E78; --faint:#9A9DA6;
+  --line:#E7E6DD; --line-strong:#D8D7CC;
+  --accent:#2546E5; --accent-ink:#1B36C7; --accent-soft:rgba(37,70,229,.07);
+  --ok:#0E9F6E; --ok-soft:rgba(14,159,110,.10);
+  --amber:#B9770A; --amber-soft:rgba(185,119,10,.12);
+  --radius:14px; --radius-lg:20px;
+  --shadow:0 1px 2px rgba(20,20,30,.04), 0 14px 34px -18px rgba(20,24,55,.18);
+  --shadow-sm:0 1px 2px rgba(20,20,30,.05);
+  --font-display:'Bricolage Grotesque',serif;
+  --font-body:'Hanken Grotesk',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-body);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;
+  background-image:radial-gradient(circle at 18% -10%,rgba(37,70,229,.06),transparent 42%),radial-gradient(circle at 92% 0%,rgba(14,159,110,.05),transparent 38%);background-attachment:fixed}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--font-mono);letter-spacing:-.01em}
+.hide{display:none!important}
+
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:42px;height:42px;border-radius:11px;background:var(--accent);display:grid;place-items:center;box-shadow:0 6px 16px -6px rgba(37,70,229,.6)}
+.logo svg{width:25px;height:25px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:23px;letter-spacing:-.02em}
+.wordmark b{color:var(--accent)}
+
+.appbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:rgba(250,250,247,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.appbar .right{display:flex;align-items:center;gap:14px}
+.useremail{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:6px 10px;border-radius:999px}
+.btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:10px;font-weight:600;font-size:14px;transition:.15s}
+.btn:hover{border-color:var(--ink);transform:translateY(-1px)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 20px -8px rgba(37,70,229,.7)}
+.btn-primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn-ghost:hover{color:var(--ink);transform:none}
+.signin-cta{position:relative;animation:signinPulse 2.6s ease-in-out infinite}
+.signin-cta svg{width:15px;height:15px;margin-left:4px;vertical-align:-2px}
+@keyframes signinPulse{0%,100%{box-shadow:0 8px 20px -8px rgba(37,70,229,.7),0 0 0 0 rgba(37,70,229,.5)}50%{box-shadow:0 8px 20px -8px rgba(37,70,229,.7),0 0 0 8px rgba(37,70,229,0)}}
+@media (prefers-reduced-motion: reduce){.signin-cta{animation:none}}
+
+.demo-banner{display:none;align-items:center;gap:10px;justify-content:center;font-size:13px;color:var(--accent-ink);background:var(--accent-soft);border-bottom:1px solid var(--line);padding:9px 16px;text-align:center}
+.demo-banner .mono{font-size:12px}
+
+/* auth */
+.hero{max-width:680px;margin:0 auto;padding:54px 22px 30px;text-align:center}
+.hero .eyebrow{display:inline-block;margin-bottom:18px}
+.hero h1{font-family:var(--font-display);font-weight:700;font-size:46px;line-height:1.05;letter-spacing:-.03em;margin-bottom:16px}
+.hero .herosub{color:var(--muted);font-size:17px;line-height:1.55;max-width:560px;margin:0 auto}
+.herotrust{display:flex;gap:36px;justify-content:center;margin-top:30px}
+.herotrust .k{font-family:var(--font-display);font-weight:600;font-size:22px}
+.herotrust .v{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.auth-wrap{display:grid;place-items:center;padding:20px 20px 70px}
+
+/* gauges + live stats */
+.livestats{max-width:560px;margin:8px auto 0;padding:0 22px}
+.gauge-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:26px 24px;text-align:center}
+.gauge{position:relative;width:190px;height:116px;margin:0 auto}
+.gsvg{width:190px;height:116px;display:block;overflow:visible}
+.gauge .gnum{position:absolute;left:0;right:0;top:50px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:38px;letter-spacing:-.03em;line-height:1}
+.gauge .glab{position:absolute;left:0;right:0;top:96px;text-align:center;font-size:11.5px;color:var(--muted);font-family:var(--font-mono)}
+.gcap{font-size:13px;color:var(--muted);margin-top:8px}
+.gcap .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;animation:pulse 2.2s infinite;vertical-align:middle}
+.livestat-row{display:flex;justify-content:center;gap:44px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.livestat-row .ls-num{font-family:var(--font-display);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.livestat-row .ls-lab{font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-top:3px}
+.appsbar{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;gap:16px}
+.appsbar .gauge{width:128px;height:80px;flex-shrink:0}
+.appsbar .gsvg{width:128px;height:80px}
+.appsbar .gauge .gnum{top:34px;font-size:26px}
+.appsbar .gauge .glab{display:none}
+.appsbar .ab-big{font-family:var(--font-display);font-weight:600;font-size:16px}
+.appsbar .ab-big .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;animation:pulse 2.2s infinite;vertical-align:middle}
+.appsbar .ab-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.auth-card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:38px 34px;position:relative;overflow:hidden}
+.auth-card::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(23,24,28,.05) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 55%);mask-image:linear-gradient(180deg,#000,transparent 55%);opacity:.5}
+.auth-card>*{position:relative}
+.auth-card .brand{margin-bottom:24px}
+.eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.auth-card h1{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1.12;letter-spacing:-.025em;margin:14px 0 8px}
+.auth-card p.sub{color:var(--muted);font-size:15px;margin-bottom:26px}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.field label{font-size:13px;font-weight:600}
+.field input{font-family:inherit;font-size:15px;padding:13px 14px;border:1px solid var(--line-strong);border-radius:11px;background:var(--bg);transition:.15s;color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px var(--accent-soft)}
+.auth-card .btn-primary{width:100%;padding:13px;font-size:15px}
+.auth-note{font-size:12.5px;color:var(--faint);margin-top:16px;text-align:center;line-height:1.5}
+.trust{display:flex;gap:18px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.trust div{flex:1}
+.trust .k{font-family:var(--font-display);font-weight:600;font-size:18px}
+.trust .v{font-size:11.5px;color:var(--muted);font-family:var(--font-mono)}
+.sent-state{display:none;text-align:center;padding:8px 0}
+.sent-state .check{width:54px;height:54px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;margin:0 auto 16px}
+.sent-state h2{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:8px}
+.sent-state p{color:var(--muted);font-size:14px}
+.err{color:#B91C1C;font-size:13px;margin-top:10px;min-height:18px}
+
+/* shell */
+.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 80px}
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px;width:max-content;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.tab{border:none;background:none;padding:9px 18px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted);transition:.15s}
+.tab.active{background:var(--ink);color:#fff}
+.feed-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+.feed-head h1{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.025em}
+.feed-head .count{font-family:var(--font-mono);font-size:13px;color:var(--muted);margin-top:6px}
+.feed-head .count b{color:var(--ok)}
+.sortrow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.fresh-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;box-shadow:0 0 0 0 rgba(14,159,110,.5);animation:pulse 2.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(14,159,110,.45)}70%{box-shadow:0 0 0 8px rgba(14,159,110,0)}100%{box-shadow:0 0 0 0 rgba(14,159,110,0)}}
+
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm);margin-bottom:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line-strong);border-radius:10px;padding:0 12px}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.search svg{width:16px;height:16px;color:var(--faint);flex-shrink:0}
+.search input{border:none;background:none;outline:none;font-family:inherit;font-size:14.5px;padding:11px 0;width:100%;color:var(--ink)}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{font-size:13px;font-weight:600;padding:8px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);transition:.15s;font-family:var(--font-body)}
+.chip:hover{border-color:var(--ink);color:var(--ink)}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.active.cat{background:var(--accent);border-color:var(--accent)}
+.select{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink);padding:9px 12px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface)}
+
+.jobs{display:flex;flex-direction:column;gap:12px}
+.job{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);transition:.16s;position:relative;animation:rise .5s both}
+.job:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:var(--shadow)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.job .top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.job .co{display:flex;align-items:center;gap:11px}
+.job .avatar{width:40px;height:40px;border-radius:10px;background:var(--bg-soft);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;color:var(--accent);font-size:17px;flex-shrink:0}
+.job h3{font-family:var(--font-display);font-size:17.5px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.job .company{font-size:13.5px;color:var(--muted);margin-top:1px}
+.job .when{font-family:var(--font-mono);font-size:11.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.job .when.new{color:var(--ok);font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.tag{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:4px 9px;border-radius:7px;background:var(--bg-soft);color:var(--muted);border:1px solid var(--line)}
+.tag.loc{color:var(--ink)}
+.tag.remote{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.tag.cat{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.tag.pay{background:#fff;color:var(--ink);border-color:var(--line-strong)}
+
+/* match scoring on cards */
+.matchpill{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.ring{width:46px;height:46px;flex-shrink:0}
+.ring text{font-family:var(--font-display);font-weight:700;font-size:13px;fill:var(--ink)}
+.matchpill .ml{font-size:11px;color:var(--muted);line-height:1.2}
+.matchpill .ml b{font-family:var(--font-mono);font-size:11px}
+.subscores{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);display:none;gap:14px}
+.subscores.open{display:flex;flex-wrap:wrap}
+.sub{flex:1;min-width:150px}
+.sub .lab{font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:5px}
+.sub .lab b{font-family:var(--font-mono);color:var(--ink)}
+.bar{height:7px;border-radius:99px;background:var(--bg-soft);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.job .go{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;font-weight:600;color:var(--accent);margin-top:14px}
+.job .go svg{width:14px;height:14px}
+
+/* resume view */
+.grid2{display:grid;grid-template-columns:1fr;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:22px}
+.card h2{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:4px}
+.card .hint{font-size:13px;color:var(--muted);margin-bottom:16px}
+.drop{border:2px dashed var(--line-strong);border-radius:var(--radius);padding:34px 20px;text-align:center;transition:.15s;cursor:pointer;background:var(--bg)}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop .di{width:48px;height:48px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;margin:0 auto 14px;color:var(--accent)}
+.drop p{font-size:14.5px;font-weight:600}
+.drop span{font-size:12.5px;color:var(--muted)}
+.paste{width:100%;margin-top:14px;min-height:120px;border:1px solid var(--line-strong);border-radius:11px;padding:12px;font-family:inherit;font-size:14px;resize:vertical;color:var(--ink);background:var(--bg)}
+.paste:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.profmeta{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:18px}
+.profmeta .pm .k{font-family:var(--font-display);font-size:22px;font-weight:700}
+.profmeta .pm .v{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.skillchips{display:flex;flex-wrap:wrap;gap:7px}
+.skillchips .sc{font-family:var(--font-mono);font-size:11.5px;padding:5px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink)}
+.checks{display:flex;flex-direction:column;gap:11px}
+.chk{display:flex;gap:11px;align-items:flex-start}
+.chk .ico{width:22px;height:22px;border-radius:6px;flex-shrink:0;display:grid;place-items:center;margin-top:1px}
+.chk.pass .ico{background:var(--ok-soft);color:var(--ok)}
+.chk.warn .ico{background:var(--amber-soft);color:var(--amber)}
+.chk .t{font-size:14px;font-weight:600}
+.chk .d{font-size:13px;color:var(--muted)}
+.gaplist{display:flex;flex-wrap:wrap;gap:7px}
+.gaplist .g{font-family:var(--font-mono);font-size:11.5px;padding:5px 10px;border-radius:8px;background:var(--amber-soft);color:var(--amber)}
+.aiout{white-space:pre-wrap;font-size:14px;line-height:1.65;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:16px;margin-top:14px;min-height:40px}
+.aiout:empty{display:none}
+.state{max-width:520px;margin:60px auto;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:40px 32px;box-shadow:var(--shadow)}
+.state .ic{width:56px;height:56px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin:0 auto 18px}
+.state h2{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:9px}
+.state p{color:var(--muted);font-size:14.5px;line-height:1.6}
+.skeleton{height:96px;border-radius:var(--radius);background:linear-gradient(100deg,var(--bg-soft) 30%,#fff 50%,var(--bg-soft) 70%);background-size:200% 100%;animation:shimmer 1.3s infinite;border:1px solid var(--line)}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* pricing */
+.pricing{max-width:1000px;margin:0 auto;padding:10px 22px 80px;text-align:center}
+.pricing .peyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.pricing h2{font-family:var(--font-display);font-size:30px;font-weight:700;letter-spacing:-.025em;margin:10px 0 6px}
+.pricing .psub{color:var(--muted);font-size:15px;margin-bottom:34px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:28px 24px;text-align:left;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);transition:.16s;position:relative}
+.plan:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.plan.featured{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 18px 40px -20px rgba(37,70,229,.5);transform:scale(1.03)}
+.plan.flash{animation:planflash 1.6s ease}
+@keyframes planflash{0%,100%{box-shadow:0 0 0 1px var(--accent),0 18px 40px -20px rgba(37,70,229,.5)}30%{box-shadow:0 0 0 4px rgba(37,70,229,.55),0 22px 48px -18px rgba(37,70,229,.7)}}
+.pbtn.flash{animation:btnflash 1.6s ease}
+@keyframes btnflash{0%,100%{transform:none}30%,60%{transform:scale(1.05)}}
+.plan.featured:hover{transform:scale(1.03) translateY(-3px)}
+.badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.04em;padding:5px 13px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 18px -8px rgba(37,70,229,.7)}
+.plan .pname{font-family:var(--font-display);font-size:18px;font-weight:600}
+.plan .price{font-family:var(--font-display);font-size:38px;font-weight:700;letter-spacing:-.03em;margin:14px 0 2px}
+.plan .price span{font-size:16px;color:var(--muted);font-weight:500;font-family:var(--font-body)}
+.plan .permo{font-family:var(--font-mono);font-size:12.5px;color:var(--ok);margin-bottom:18px}
+.plan ul{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:10px}
+.plan li{font-size:14px;color:var(--ink);display:flex;gap:9px;align-items:flex-start}
+.plan li svg{width:16px;height:16px;color:var(--ok);flex-shrink:0;margin-top:2px}
+.plan .pbtn{margin-top:auto;text-align:center;padding:12px;border-radius:11px;font-weight:600;font-size:14.5px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);transition:.15s;cursor:pointer;width:100%}
+.plan .pbtn:hover{border-color:var(--ink)}
+.plan.featured .pbtn{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 20px -8px rgba(37,70,229,.7)}
+.plan.featured .pbtn:hover{background:var(--accent-ink)}
+.paynote{font-size:12.5px;color:var(--faint);margin-top:24px;line-height:1.6}
+.paynote a{color:var(--accent);font-weight:600;cursor:pointer}
+.paid-banner{display:none;align-items:center;gap:10px;justify-content:center;font-size:13.5px;color:var(--ok);background:var(--ok-soft);border-bottom:1px solid var(--line);padding:11px 16px;text-align:center;font-weight:500}
+
+/* sign-in modal */
+.modal{position:fixed;inset:0;background:rgba(18,20,28,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px;animation:fadein .18s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal .auth-card{max-width:430px;width:100%;animation:pop .22s cubic-bezier(.2,.8,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.modal-x{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted);display:grid;place-items:center;z-index:2}
+.modal-x:hover{color:var(--ink);border-color:var(--ink)}
+
+/* applied tracker */
+.appcount{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:11px;margin-left:7px}
+.tab .appcount{background:var(--line-strong);color:var(--ink)}
+.tab.active .appcount{background:rgba(255,255,255,.25);color:#fff}
+.applist{display:flex;flex-direction:column;gap:12px}
+.appitem{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.appitem .ai-main{flex:1;min-width:200px}
+.appitem h4{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.01em}
+.appitem .ai-co{font-size:13px;color:var(--muted);margin-top:1px}
+.appitem .ai-when{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-top:4px}
+.statussel{font-family:var(--font-mono);font-size:12px;font-weight:600;padding:7px 10px;border-radius:9px;border:1px solid var(--line-strong);background:var(--bg);color:var(--ink)}
+.appitem .ai-link{font-size:13px;font-weight:600;color:var(--accent)}
+.appitem .ai-del{border:none;background:none;color:var(--faint);cursor:pointer;font-size:13px;padding:4px}
+.appitem .ai-del:hover{color:#B91C1C}
+
+/* your search at a glance */
+.glance{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.gl-seg{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:14px 16px}
+.gl-num{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.02em;line-height:1}
+.gl-num .gl-sub{font-size:13px;color:var(--muted);font-weight:500;font-family:var(--font-body)}
+.gl-lab{font-size:11.5px;color:var(--muted);font-family:var(--font-mono);margin-top:6px}
+.gl-top{cursor:pointer;transition:.15s;text-decoration:none;color:inherit;display:block}
+.gl-top:hover{border-color:var(--accent);transform:translateY(-2px)}
+.gl-toprow{display:flex;align-items:center;justify-content:space-between}
+.gl-pct{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.02em}
+.gl-arrow{color:var(--accent);font-weight:700;font-size:17px}
+.gl-clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gl-cta{flex:1;background:var(--accent-soft);border:1px solid transparent;border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;color:var(--accent-ink);font-size:14px;font-weight:500}
+.gl-cta:hover{background:rgba(37,70,229,.12)}
+.gl-cta .gl-arrow{color:var(--accent-ink)}
+
+/* return-from-posting prompt */
+.applytoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(140%);z-index:90;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 18px 50px -16px rgba(20,24,55,.4);padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-width:380px;width:calc(100% - 32px);transition:transform .3s cubic-bezier(.2,.8,.3,1)}
+.applytoast.show{transform:translateX(-50%) translateY(0)}
+.applytoast .at-q{font-size:14.5px;font-weight:600}
+.applytoast .at-q span{color:var(--accent)}
+.applytoast .at-btns{display:flex;gap:8px}
+.applytoast .at-btns button{flex:1;padding:9px;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
+.applytoast .at-yes{background:var(--ok);border-color:var(--ok);color:#fff}
+.applytoast .at-x{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--faint);font-size:14px;cursor:pointer}
+
+
+/* ── HERO REDESIGN ── */
+.hero-wrap{position:relative;background:linear-gradient(135deg,#080e2a 0%,#0f1f4a 45%,#091530 100%);overflow:hidden;min-height:540px;display:flex;align-items:center}
+.hero-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55;pointer-events:none}
+.hero-inner{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:80px 40px 80px;display:flex;align-items:center;gap:60px;width:100%}
+.hero{max-width:none;margin:0;padding:0;text-align:left;flex:1}
+.hero .eyebrow{color:rgba(120,180,255,.85);border:1px solid rgba(120,180,255,.25);background:rgba(37,70,229,.15);padding:6px 14px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.hero h1{color:#fff;font-size:52px;margin-top:20px}
+.hero .herosub{color:rgba(255,255,255,.65);max-width:500px;margin:16px 0 0}
+.herotrust{margin-top:36px;justify-content:flex-start;gap:40px}
+.herotrust .k{color:#fff}
+.herotrust .v{color:rgba(255,255,255,.45)}
+.hero-divider{width:1px;height:32px;background:rgba(255,255,255,.2);margin:0 4px}
+.hero-visual{flex:0 0 340px;display:flex;flex-direction:column;gap:14px}
+.hmock{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px 20px;backdrop-filter:blur(8px);animation:hmfloat 5s ease-in-out infinite}
+.hmock2{animation-delay:-2.5s;opacity:.7;transform:scale(.96);margin-top:-10px}
+.hmock-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.hmock-logo{position:relative;overflow:hidden;width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#2546E5,#0E9F6E);display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;font-family:var(--font-display)}
+.hmock-co{font-size:13px;font-weight:600;color:#fff}
+.hmock-loc{font-size:11.5px;color:rgba(255,255,255,.45);font-family:var(--font-mono)}
+.hmock-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;font-family:var(--font-display)}
+.hmock-tags{display:flex;gap:6px;flex-wrap:wrap}
+.hmock-tag{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(37,70,229,.3);border:1px solid rgba(37,70,229,.4);color:rgba(150,180,255,.9);font-family:var(--font-mono)}
+.hmock-match{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.hmock-score{font-size:12px;color:rgba(255,255,255,.5);font-family:var(--font-mono)}
+.hmock-pct{font-size:18px;font-weight:700;color:#4ade80;font-family:var(--font-display)}
+.hmock-bar{height:4px;background:rgba(255,255,255,.1);border-radius:4px;margin-top:8px;overflow:hidden}
+.hmock-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#2546E5,#4ade80);animation:barfill 2.5s ease forwards}
+.hmock-fill2{animation-delay:.4s;width:0%}
+@keyframes barfill{to{width:91%}}
+@keyframes hmfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* ── FEATURE SECTIONS ── */
+/* features section background */
+.features-bg{position:relative;overflow:hidden;background:linear-gradient(180deg,#ecf0fb 0%,#f4f3fb 38%,var(--bg) 100%)}
+.features-bg::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.6;background-image:radial-gradient(rgba(37,70,229,.06) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 78%);mask-image:linear-gradient(180deg,#000,transparent 78%)}
+.fblob{position:absolute;border-radius:50%;filter:blur(75px);opacity:.55;pointer-events:none;z-index:0}
+.fblob.b1{width:380px;height:380px;background:rgba(37,70,229,.20);top:-70px;left:-90px;animation:fblobmove 17s ease-in-out infinite}
+.fblob.b2{width:340px;height:340px;background:rgba(14,159,110,.17);bottom:8%;right:-90px;animation:fblobmove 21s ease-in-out infinite reverse}
+.fblob.b3{width:300px;height:300px;background:rgba(124,58,237,.13);top:42%;left:38%;animation:fblobmove 25s ease-in-out infinite}
+@keyframes fblobmove{0%,100%{transform:translate(0,0)}50%{transform:translate(46px,-34px)}}
+
+.features{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:20px 32px 10px}
+.feat-intro{text-align:center;max-width:660px;margin:0 auto;padding:56px 0 16px}
+.feat-intro .feat-eyebrow{display:inline-block;margin-bottom:16px}
+.feat-intro h2{font-family:var(--font-display);font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1.08;margin-bottom:16px}
+.feat-intro p{color:var(--muted);font-size:17px;line-height:1.6;max-width:540px;margin:0 auto}
+.feat{display:flex;align-items:center;gap:64px;padding:56px 0;border-bottom:1px solid rgba(180,185,210,.35)}
+.feat:last-child{border-bottom:none}
+.feat.rev{flex-direction:row-reverse}
+.feat-text{flex:1}
+.feat-icon{width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,rgba(37,70,229,.14),rgba(14,159,110,.12));color:var(--accent);display:grid;place-items:center;margin-bottom:20px;box-shadow:0 8px 20px -10px rgba(37,70,229,.4)}
+.feat.rev .feat-icon{margin-left:auto;margin-right:auto}
+.feat-icon svg{width:30px;height:30px}
+.feat-eyebrow{display:inline-block;font-family:var(--font-mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700;background:var(--accent-soft);border:1px solid rgba(37,70,229,.18);padding:7px 14px;border-radius:999px}
+.feat-text h3{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.025em;line-height:1.08;margin:14px 0 14px}
+.feat-text p{color:var(--muted);font-size:16.5px;line-height:1.62;max-width:430px}
+.feat-visual{flex:0 0 420px;display:flex;justify-content:center}
+.fcard{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px;position:relative;overflow:hidden}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* company logo (live favicon with letter fallback) */
+.cologo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:16%;border-radius:inherit}
+
+/* match card */
+.mc-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.mc-logo{position:relative;overflow:hidden;width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#2546E5,#0E9F6E);display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--font-display);font-size:16px}
+.mc-co{font-size:14px;font-weight:700}
+.mc-meta{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.mc-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.mc-score{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px 6px;text-align:center}
+.mc-score.strong{background:var(--ok-soft);border-color:rgba(14,159,110,.3)}
+.mc-num{font-family:var(--font-display);font-weight:700;font-size:19px}
+.mc-num.ok{color:var(--ok)}
+.mc-lbl{font-size:9.5px;color:var(--muted);font-family:var(--font-mono);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+.mc-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:3px 9px;border-radius:999px;margin-top:2px}
+.mc-info{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding-top:12px;border-top:1px solid var(--line)}
+.mc-info b{color:var(--ink)}
+
+/* ticker */
+.ticker-wrap{overflow:hidden;position:relative;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.ticker-row{display:flex;gap:12px;width:max-content;animation:tickL 26s linear infinite}
+.ticker-row.r2{animation:tickR 30s linear infinite;margin-top:12px}
+@keyframes tickL{to{transform:translateX(-50%)}}
+@keyframes tickR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.tk{flex:0 0 auto;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;box-shadow:var(--shadow-sm);min-width:210px}
+.tk-logo{position:relative;overflow:hidden;width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2546E5,#0E9F6E);display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--font-display);font-size:12px;flex:0 0 auto}
+.tk-co{font-size:11px;color:var(--muted);font-family:var(--font-mono)}
+.tk-role{font-size:13px;font-weight:600;margin-top:2px}
+.tk-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:6px}
+.stat-row{display:flex;gap:14px;margin-top:22px}
+.stat{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+.stat .sn{font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--accent)}
+.stat .sl{font-size:11.5px;color:var(--muted);font-family:var(--font-mono);margin-top:2px}
+
+/* skill chips card */
+.sk-h{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;margin-bottom:12px}
+.sk-h svg{width:18px;height:18px;color:var(--accent)}
+.sk-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.sk-chip{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+.sk-chip.add{background:var(--ok-soft);border-color:rgba(14,159,110,.35);color:var(--ok);animation:skpop .5s both}
+.sk-chip.add:nth-child(2){animation-delay:.5s}
+.sk-chip.add:nth-child(4){animation-delay:1s}
+@keyframes skpop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.sk-block{background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:12px}
+
+/* tracker card */
+.tr-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 14px;margin-bottom:9px}
+.tr-left{display:flex;align-items:center;gap:11px}
+.tr-logo{position:relative;overflow:hidden;width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#2546E5,#0E9F6E);display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--font-display);font-size:13px;flex:0 0 auto}
+.tr-role{font-size:13px;font-weight:600}
+.tr-co{font-size:11px;color:var(--muted);font-family:var(--font-mono)}
+.tr-pill{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em}
+.tr-applied{background:var(--accent-soft);color:var(--accent)}
+.tr-interview{background:var(--amber-soft);color:var(--amber)}
+.tr-offer{background:var(--ok-soft);color:var(--ok)}
+@media(max-width:820px){.feat,.feat.rev{flex-direction:column;gap:32px;text-align:center;padding:44px 0}.feat-text p{margin:0 auto}.feat-visual{flex:0 0 auto;width:100%}}
+
+/* ── FOOTER ── */
+.site-footer{background:linear-gradient(135deg,#080e2a,#091530);color:#fff;padding:0 32px 34px;margin-top:30px}
+.foot-cta-band{max-width:1080px;margin:0 auto;padding:52px 0 46px;border-bottom:1px solid rgba(255,255,255,.1);text-align:center}
+.foot-cta-band h2{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.025em;line-height:1.1;margin-bottom:10px}
+.foot-cta-band p{color:rgba(255,255,255,.6);font-size:15.5px;margin-bottom:24px}
+.foot-cta{background:#fff;color:#091530;border:none;padding:13px 28px;border-radius:11px;font-weight:700;font-size:15px;transition:.15s}
+.foot-cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px -10px rgba(0,0,0,.6)}
+.foot-cols{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;padding:44px 0 34px}
+.foot-brand{display:flex;align-items:flex-start;gap:12px}
+.foot-logo{width:46px;height:46px;border-radius:12px;background:var(--accent);display:grid;place-items:center;box-shadow:0 8px 22px -8px rgba(37,70,229,.8);flex:0 0 auto}
+.foot-logo svg{width:27px;height:27px}
+.foot-name{font-family:var(--font-display);font-weight:700;font-size:24px}
+.foot-name b{color:#7da2ff}
+.foot-tag{color:rgba(255,255,255,.55);font-size:13.5px;margin-top:4px;max-width:240px;line-height:1.5}
+.foot-col h4{font-size:12px;font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:14px}
+.foot-col ul{list-style:none}
+.foot-col li{margin-bottom:9px}
+.foot-col a,.foot-col span.fl{color:rgba(255,255,255,.78);font-size:14px;cursor:pointer;transition:.15s}
+.foot-col a:hover,.foot-col span.fl:hover{color:#fff}
+.foot-socials{display:flex;gap:10px;margin-top:16px}
+.foot-socials a{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.08);display:grid;place-items:center;color:rgba(255,255,255,.7);transition:.15s}
+.foot-socials a:hover{background:rgba(255,255,255,.16);color:#fff}
+.foot-socials svg{width:17px;height:17px}
+.foot-bottom{max-width:1080px;margin:0 auto;padding-top:22px;border-top:1px solid rgba(255,255,255,.12);font-size:12.5px;color:rgba(255,255,255,.45);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.foot-bottom .fb-links{display:flex;gap:18px}
+.foot-bottom .fb-links a{color:rgba(255,255,255,.55);cursor:pointer}
+.foot-bottom .fb-links a:hover{color:#fff}
+
+/* ── RESPONSIVE: tablet / laptop / mobile ── */
+@media(max-width:1024px){
+  .hero-inner{max-width:920px;gap:44px}
+  .hero h1{font-size:46px}
+  .hero-visual{flex:0 0 300px}
+  .features{padding:20px 28px 10px}
+  .feat{gap:48px}
+}
+@media(max-width:860px){
+  .hero-inner{flex-direction:column;padding:60px 24px;gap:40px}
+  .hero-visual{display:flex;flex:0 0 auto;width:100%;max-width:360px;flex-direction:row}
+  .hero-visual .hmock{flex:1}
+  .hero-visual .hmock2{margin-top:0}
+  .hero{text-align:center}
+  .herotrust{justify-content:center}
+  .hero .herosub{margin:16px auto 0}
+  .hero h1{font-size:42px}
+}
+@media(max-width:760px){
+  .plans{grid-template-columns:1fr;max-width:380px;margin:0 auto}
+  .plan.featured{transform:none}
+  .plan.featured:hover{transform:translateY(-3px)}
+}
+@media(max-width:640px){
+  .appbar{padding:12px 16px}
+  .wordmark{font-size:20px}
+  .logo{width:38px;height:38px}
+  .hero-inner{padding:48px 18px}
+  .hero-visual{display:none}
+  .hero h1{font-size:34px}
+  .herosub{font-size:15px}
+  .herotrust{gap:20px}
+  .features{padding:10px 18px}
+  .feat,.feat.rev{padding:36px 0;gap:26px}
+  .feat-text h3{font-size:25px}
+  .pricing{padding:10px 18px 60px}
+  .pricing h2{font-size:24px}
+  .feed-head h1{font-size:23px}
+  .auth-card{padding:30px 24px}
+  .foot-cols{grid-template-columns:1fr 1fr;gap:28px;text-align:left}
+  .foot-bottom{flex-direction:column;text-align:center}
+}
+@media(max-width:400px){
+  .hero h1{font-size:29px}
+  .feat-text h3{font-size:22px}
+  .mc-scores{grid-template-columns:repeat(2,1fr)}
+  .btn{padding:8px 12px;font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner" id="demoBanner"><span class="mono">PREVIEW MODE</span><span>Sample data. Add your Supabase keys in the file to go live.</span></div>
+<div class="paid-banner" id="paidBanner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Payment received. Sign in below with the same email you paid with to unlock your feed.</span></div>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="appbar">
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.4" fill="#fff"/><circle cx="18" cy="7" r="2.4" fill="#fff"/><circle cx="12" cy="17" r="2.4" fill="#fff"/><path d="M7.8 7.2 10.4 15M16.4 8.4 13.4 15.4M8 6.4h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".85"/></svg></span><span class="wordmark">Jobra<b> AI</b></span></div>
+    <div class="right"><button class="btn btn-primary signin-cta" id="navSignin">Member sign in <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+  </div>
+  <div class="hero-wrap">
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    <div class="hero-inner">
+      <section class="hero">
+        <span class="eyebrow">Tech &amp; cyber jobs, matched to you</span>
+        <h1>Your tech &amp; cyber<br>job copilot.</h1>
+        <p class="herosub">Fresh software, cybersecurity, data &amp; DevOps roles across the U.S. and Canada, ranked by how well they match your resume. Updated hourly, members only.</p>
+        <div class="herotrust">
+          <div><div class="k">US + CA</div><div class="v">coverage</div></div>
+          <div class="hero-divider"></div>
+          <div><div class="k">Hourly</div><div class="v">refresh</div></div>
+          <div class="hero-divider"></div>
+          <div><div class="k">Match</div><div class="v">scoring</div></div>
+        </div>
+      </section>
+      <div class="hero-visual">
+        <div class="hmock">
+          <div class="hmock-top">
+            <div class="hmock-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/stripe.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/stripe.com'}else{this.remove()}" alt="">S</div>
+            <div><div class="hmock-co">Stripe</div><div class="hmock-loc">Remote · US</div></div>
+          </div>
+          <div class="hmock-title">Senior Security Engineer</div>
+          <div class="hmock-tags"><span class="hmock-tag">Python</span><span class="hmock-tag">AWS</span><span class="hmock-tag">Zero Trust</span></div>
+          <div class="hmock-match">
+            <span class="hmock-score">Resume match</span>
+            <span class="hmock-pct">91%</span>
+          </div>
+          <div class="hmock-bar"><div class="hmock-fill"></div></div>
+        </div>
+        <div class="hmock hmock2">
+          <div class="hmock-top">
+            <div class="hmock-logo" style="background:linear-gradient(135deg,#7c3aed,#2546E5)"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/cloudflare.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/cloudflare.com'}else{this.remove()}" alt="">C</div>
+            <div><div class="hmock-co">Cloudflare</div><div class="hmock-loc">Remote · US + CA</div></div>
+          </div>
+          <div class="hmock-title">Staff Software Engineer</div>
+          <div class="hmock-tags"><span class="hmock-tag">Go</span><span class="hmock-tag">Rust</span><span class="hmock-tag">Distributed</span></div>
+          <div class="hmock-match">
+            <span class="hmock-score">Resume match</span>
+            <span class="hmock-pct">84%</span>
+          </div>
+          <div class="hmock-bar"><div class="hmock-fill hmock-fill2"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURE SECTIONS -->
+  <div class="features-bg">
+  <span class="fblob b1"></span><span class="fblob b2"></span><span class="fblob b3"></span>
+  <div class="features">
+
+    <div class="feat-intro reveal">
+      <span class="feat-eyebrow">What you get</span>
+      <h2>Four tools that do the<br>job hunt with you.</h2>
+      <p>Jobra isn't just a job list. It scores every role against your resume, refreshes around the clock, shows you what to fix, and tracks every application, all in one place.</p>
+    </div>
+
+    <div class="feat reveal">
+      <div class="feat-text">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 3a9 9 0 0 1 0 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="feat-eyebrow">Resume match scoring</span>
+        <h3>Roles ranked by how<br>well they fit you.</h3>
+        <p>Upload your resume once and every job gets a match score, broken down into skills, experience level, and industry fit, so you spend time only on the roles you can actually win.</p>
+      </div>
+      <div class="feat-visual">
+        <div class="fcard">
+          <div class="mc-top">
+            <div class="mc-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/datadoghq.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/datadoghq.com'}else{this.remove()}" alt="">D</div>
+            <div><div class="mc-co">Datadog · 2h ago</div><div class="mc-meta">Senior Software Engineer, Platform</div></div>
+          </div>
+          <div class="mc-scores">
+            <div class="mc-score strong"><div class="mc-num ok">93%</div><div class="mc-lbl">Match</div></div>
+            <div class="mc-score"><div class="mc-num">95%</div><div class="mc-lbl">Skill</div></div>
+            <div class="mc-score"><div class="mc-num">90%</div><div class="mc-lbl">Level</div></div>
+            <div class="mc-score"><div class="mc-num">92%</div><div class="mc-lbl">Industry</div></div>
+          </div>
+          <span class="mc-tag">STRONG MATCH</span>
+          <div class="mc-info"><span>New York · Remote</span><span><b>$165K–$210K</b></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat rev reveal">
+      <div class="feat-text">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="feat-eyebrow">Updated hourly</span>
+        <h3>Fresh roles,<br>every single hour.</h3>
+        <p>New software, cybersecurity, data, and DevOps openings across the U.S. and Canada flow in around the clock, so you're always seeing what was posted minutes ago, not last week.</p>
+        <div class="stat-row">
+          <div class="stat"><div class="sn">US + CA</div><div class="sl">coverage</div></div>
+          <div class="stat"><div class="sn">Hourly</div><div class="sl">refresh</div></div>
+          <div class="stat"><div class="sn">24/7</div><div class="sl">always on</div></div>
+        </div>
+      </div>
+      <div class="feat-visual">
+        <div class="fcard" style="padding:18px 0">
+          <div class="ticker-wrap">
+            <div class="ticker-row">
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/stripe.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/stripe.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Stripe · Remote</div><div class="tk-role">Security Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/shopify.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/shopify.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Shopify · Toronto</div><div class="tk-role">Backend Developer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/cloudflare.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/cloudflare.com'}else{this.remove()}" alt="">C</span><div><div class="tk-co">Cloudflare · Remote</div><div class="tk-role">SRE</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/datadoghq.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/datadoghq.com'}else{this.remove()}" alt="">D</span><div><div class="tk-co">Datadog · NYC</div><div class="tk-role">Data Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/stripe.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/stripe.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Stripe · Remote</div><div class="tk-role">Security Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/shopify.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/shopify.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Shopify · Toronto</div><div class="tk-role">Backend Developer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/cloudflare.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/cloudflare.com'}else{this.remove()}" alt="">C</span><div><div class="tk-co">Cloudflare · Remote</div><div class="tk-role">SRE</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/datadoghq.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/datadoghq.com'}else{this.remove()}" alt="">D</span><div><div class="tk-co">Datadog · NYC</div><div class="tk-role">Data Engineer</div></div></div>
+            </div>
+            <div class="ticker-row r2">
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/gitlab.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/gitlab.com'}else{this.remove()}" alt="">G</span><div><div class="tk-co">GitLab · Remote</div><div class="tk-role">ML Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/crowdstrike.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/crowdstrike.com'}else{this.remove()}" alt="">C</span><div><div class="tk-co">CrowdStrike · Remote</div><div class="tk-role">Penetration Tester</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/hashicorp.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/hashicorp.com'}else{this.remove()}" alt="">H</span><div><div class="tk-co">HashiCorp · Austin</div><div class="tk-role">DevOps Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/snowflake.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/snowflake.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Snowflake · Remote</div><div class="tk-role">Data Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/gitlab.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/gitlab.com'}else{this.remove()}" alt="">G</span><div><div class="tk-co">GitLab · Remote</div><div class="tk-role">ML Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/crowdstrike.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/crowdstrike.com'}else{this.remove()}" alt="">C</span><div><div class="tk-co">CrowdStrike · Remote</div><div class="tk-role">Penetration Tester</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/hashicorp.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/hashicorp.com'}else{this.remove()}" alt="">H</span><div><div class="tk-co">HashiCorp · Austin</div><div class="tk-role">DevOps Engineer</div></div></div>
+              <div class="tk"><span class="tk-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/snowflake.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/snowflake.com'}else{this.remove()}" alt="">S</span><div><div class="tk-co">Snowflake · Remote</div><div class="tk-role">Data Engineer</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat reveal">
+      <div class="feat-text">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M14 3v4a1 1 0 0 0 1 1h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 3h9l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 13l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="feat-eyebrow">Resume checkup &amp; skill gaps</span>
+        <h3>Know exactly<br>what to fix.</h3>
+        <p>Jobra checks your resume for length, contact info, quantified impact, and skill coverage, then shows the most-requested skills across your matching roles that aren't on your resume yet.</p>
+      </div>
+      <div class="feat-visual">
+        <div class="fcard">
+          <div class="sk-h"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Boost your resume score</div>
+          <div class="sk-chips">
+            <span class="sk-chip add">+ Kubernetes</span>
+            <span class="sk-chip">Python</span>
+            <span class="sk-chip add">+ Terraform</span>
+            <span class="sk-chip">AWS</span>
+            <span class="sk-chip add">+ GraphQL</span>
+          </div>
+          <div class="sk-block">
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">Resume checkup</div>
+            <div class="mc-info" style="border:none;padding:0;font-size:12px"><span>Quantified impact</span><span style="color:var(--ok);font-weight:700">✓ Strong</span></div>
+            <div class="mc-info" style="border:none;padding:6px 0 0;font-size:12px"><span>Skill coverage</span><span style="color:var(--amber);font-weight:700">3 to add</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat rev reveal">
+      <div class="feat-text">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="feat-eyebrow">Application tracker</span>
+        <h3>Track every<br>application in one place.</h3>
+        <p>Open a role and Jobra asks if you applied, then keeps it organized from saved to applied to interviewing to offer, so nothing slips through the cracks during your search.</p>
+      </div>
+      <div class="feat-visual">
+        <div class="fcard">
+          <div class="tr-row"><div class="tr-left"><span class="tr-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/stripe.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/stripe.com'}else{this.remove()}" alt="">S</span><div><div class="tr-role">Senior Security Engineer</div><div class="tr-co">Stripe</div></div></div><span class="tr-pill tr-offer">Offer</span></div>
+          <div class="tr-row"><div class="tr-left"><span class="tr-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/cloudflare.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/cloudflare.com'}else{this.remove()}" alt="">C</span><div><div class="tr-role">Staff Software Engineer</div><div class="tr-co">Cloudflare</div></div></div><span class="tr-pill tr-interview">Interviewing</span></div>
+          <div class="tr-row"><div class="tr-left"><span class="tr-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/hashicorp.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/hashicorp.com'}else{this.remove()}" alt="">H</span><div><div class="tr-role">DevOps Engineer</div><div class="tr-co">HashiCorp</div></div></div><span class="tr-pill tr-applied">Applied</span></div>
+          <div class="tr-row" style="margin-bottom:0"><div class="tr-left"><span class="tr-logo"><img class="cologo" referrerpolicy="no-referrer" src="https://icons.duckduckgo.com/ip3/snowflake.com.ico" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://icon.horse/icon/snowflake.com'}else{this.remove()}" alt="">S</span><div><div class="tr-role">Data Engineer</div><div class="tr-co">Snowflake</div></div></div><span class="tr-pill tr-applied">Applied</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <section class="pricing" id="pricing">
+    <span class="peyebrow">Membership</span>
+    <h2>Pick your plan</h2>
+    <p class="psub">Full access to the matched job feed, resume scoring, and refine tools. Cancel anytime.</p>
+    <div class="plans">
+      <div class="plan">
+        <div class="pname">Monthly</div>
+        <div class="price">$50<span> /mo</span></div>
+        <div class="permo">billed every month</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Full matched job feed</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Resume match scoring</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Cancel anytime</li>
+        </ul>
+        <button class="pbtn" data-plan="monthly">Choose monthly</button>
+      </div>
+      <div class="plan featured" id="planFeatured">
+        <div class="badge">MOST POPULAR</div>
+        <div class="pname">3 months</div>
+        <div class="price">$105<span> /3 mo</span></div>
+        <div class="permo">just $35/mo, save 30%</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in monthly</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Best value for an active search</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Renews every 3 months</li>
+        </ul>
+        <button class="pbtn" data-plan="quarterly">Choose 3 months</button>
+      </div>
+      <div class="plan">
+        <div class="pname">Yearly</div>
+        <div class="price">$240<span> /yr</span></div>
+        <div class="permo">just $20/mo, save 60%</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in monthly</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Lowest monthly rate</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Renews yearly</li>
+        </ul>
+        <button class="pbtn" data-plan="yearly">Choose yearly</button>
+      </div>
+    </div>
+    <p class="paynote">Payments are handled securely by Stripe. Use the same email when you pay and when you sign in. Already subscribed? <a id="paynoteSignin">Sign in to your feed</a>.</p>
+  </section>
+
+  <footer class="site-footer">
+    <div class="foot-cta-band">
+      <h2>Let Jobra find your next role.</h2>
+      <p>Fresh tech &amp; cyber jobs across the U.S. and Canada, matched to your resume.</p>
+      <button class="foot-cta" id="footCta">Pick your plan</button>
+    </div>
+
+    <div class="foot-cols">
+      <div class="foot-col">
+        <div class="foot-brand">
+          <span class="foot-logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.4" fill="#fff"/><circle cx="18" cy="7" r="2.4" fill="#fff"/><circle cx="12" cy="17" r="2.4" fill="#fff"/><path d="M7.8 7.2 10.4 15M16.4 8.4 13.4 15.4M8 6.4h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".85"/></svg></span>
+          <div>
+            <div class="foot-name">Jobra<b> AI</b></div>
+            <div class="foot-tag">Your tech &amp; cyber job copilot. Updated hourly, members only.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot-col">
+        <h4>Product</h4>
+        <ul>
+          <li><span class="fl" data-scroll="pricing">Browse roles</span></li>
+          <li><span class="fl" data-scroll="pricing">Pricing</span></li>
+          <li><span class="fl" id="footSignin">Member sign in</span></li>
+          <li><span class="fl" data-scroll="pricing">Resume matching</span></li>
+        </ul>
+      </div>
+
+      <div class="foot-col">
+        <h4>Categories</h4>
+        <ul>
+          <li><span class="fl" data-scroll="pricing">Software engineering</span></li>
+          <li><span class="fl" data-scroll="pricing">Cybersecurity</span></li>
+          <li><span class="fl" data-scroll="pricing">Data &amp; ML</span></li>
+          <li><span class="fl" data-scroll="pricing">DevOps &amp; SRE</span></li>
+        </ul>
+      </div>
+
+      <div class="foot-col">
+        <h4>Coverage</h4>
+        <ul>
+          <li><span class="fl">United States</span></li>
+          <li><span class="fl">Canada</span></li>
+          <li><span class="fl">Remote roles</span></li>
+          <li><span class="fl">Hybrid &amp; on-site</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="foot-bottom">
+      <span>© 2026 Jobra AI · Built for tech &amp; cyber job seekers in the U.S. &amp; Canada.</span>
+      <span class="fb-links"><a href="#" id="footPrivacy">Privacy</a><a href="#" id="footTerms">Terms</a><a href="mailto:jobrajobs@gmail.com?subject=Jobra%20Jobs%20%E2%80%94%20Support%20request" id="footContact">Contact Support</a></span>
+    </div>
+  </footer>
+
+  <div class="modal hide" id="signinModal">
+    <div class="auth-card">
+      <button class="modal-x" id="signinClose" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.4" fill="#fff"/><circle cx="18" cy="7" r="2.4" fill="#fff"/><circle cx="12" cy="17" r="2.4" fill="#fff"/><path d="M7.8 7.2 10.4 15M16.4 8.4 13.4 15.4M8 6.4h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".85"/></svg></span><span class="wordmark">Jobra<b> AI</b></span></div>
+      <div id="loginForm">
+        <span class="eyebrow">Welcome back</span>
+        <h1>Sign in to your feed.</h1>
+        <p class="sub">Enter the email you subscribed with and we'll send a secure sign-in link. No password.</p>
+        <div class="field"><label for="email">Email address</label><input id="email" type="email" placeholder="you@email.com" autocomplete="email" /></div>
+        <button class="btn btn-primary" id="loginBtn">Send me a sign-in link</button>
+        <div class="err" id="loginErr"></div>
+        <p class="auth-note">Not subscribed yet? Close this and pick a plan to get access.</p>
+      </div>
+      <div class="sent-state" id="sentState"><div class="check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2>Check your inbox</h2><p>We sent a sign-in link to <b id="sentTo"></b>.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="feedScreen" class="hide">
+  <div class="appbar">
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.4" fill="#fff"/><circle cx="18" cy="7" r="2.4" fill="#fff"/><circle cx="12" cy="17" r="2.4" fill="#fff"/><path d="M7.8 7.2 10.4 15M16.4 8.4 13.4 15.4M8 6.4h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".85"/></svg></span><span class="wordmark">Jobra<b> AI</b></span></div>
+    <div class="right"><span class="useremail" id="userEmail"></span><button class="btn btn-ghost hide" id="manageBtn">Manage subscription</button><button class="btn btn-ghost" id="signOutBtn">Sign out</button></div>
+  </div>
+
+  <div class="wrap">
+    <div class="tabs"><button class="tab active" data-tab="feed">Job feed</button><button class="tab" data-tab="resume">My resume</button><button class="tab" data-tab="applied">Applied<span class="appcount hide" id="appCount">0</span></button></div>
+
+    <!-- FEED TAB -->
+    <div id="feedView">
+      <div class="glance hide" id="glance"></div>
+      <div class="feed-head">
+        <div><h1>Roles for you</h1><div class="count" id="feedCount"></div></div>
+        <div class="sortrow"><span>Sort</span>
+          <select class="select" id="sortBy"><option value="recent">Newest</option><option value="match">Best match</option></select>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="search"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="searchInput" placeholder="Search title, company, keyword…" /></div>
+        <div class="chips" id="countryChips"><button class="chip active" data-country="all">All</button><button class="chip" data-country="US">🇺🇸 US</button><button class="chip" data-country="CA">🇨🇦 Canada</button><button class="chip" data-country="remote">Remote</button></div>
+        <select class="select" id="seniority"><option value="all">All levels</option><option value="intern">Intern</option><option value="junior">Junior</option><option value="mid">Mid</option><option value="senior">Senior</option><option value="lead">Lead / Staff</option></select>
+      </div>
+      <div class="chips" id="catChips" style="margin-bottom:20px"><button class="chip cat active" data-cat="all">All tech</button><button class="chip cat" data-cat="software">Software</button><button class="chip cat" data-cat="cybersecurity">Cybersecurity</button><button class="chip cat" data-cat="data">Data / ML</button><button class="chip cat" data-cat="devops">DevOps / Cloud</button><button class="chip cat" data-cat="it">IT</button></div>
+      <div class="jobs" id="jobsList"></div>
+    </div>
+
+    <!-- RESUME TAB -->
+    <div id="resumeView" class="hide">
+      <div id="uploadCard" class="card" style="margin-bottom:16px">
+        <h2>Upload your resume</h2>
+        <p class="hint">We read it right here in your browser, so it never leaves your device unless you save it. PDF, Word (.docx), or paste the text.</p>
+        <div class="drop" id="drop"><div class="di"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L8 8m4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><p>Drop your resume here or click to browse</p><span>PDF or .docx</span></div>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="hide" />
+        <textarea class="paste" id="pasteBox" placeholder="…or paste your resume text here"></textarea>
+        <button class="btn btn-primary" id="analyzeBtn" style="margin-top:14px">Analyze &amp; match jobs</button>
+        <div class="err" id="resumeErr"></div>
+      </div>
+
+      <div id="profileBlock" class="hide">
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2 style="margin:0">Your profile</h2><button class="btn btn-ghost" id="reupload">Replace resume</button></div>
+          <div class="profmeta" id="profMeta"></div>
+          <div class="skillchips" id="profSkills"></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h2>Resume checkup</h2><p class="hint">Quick resume checks that all run locally.</p>
+            <div class="checks" id="checks"></div>
+          </div>
+          <div class="card">
+            <h2>Skill gaps</h2><p class="hint">The skills most requested across your matching roles that aren't on your resume yet.</p>
+            <div class="gaplist" id="gaps"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h2>AI tailoring <span class="mono" style="font-size:11px;color:var(--accent)">optional</span></h2>
+          <p class="hint">Rewrite your summary &amp; bullets to target the roles you match best.</p>
+          <button class="btn btn-primary" id="aiBtn">Generate tailored suggestions</button>
+          <div class="aiout" id="aiOut"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPLIED TAB -->
+    <div id="appliedView" class="hide">
+      <div class="feed-head"><div><h1>Applied &amp; saved</h1><div class="count" id="appliedSub">Jobs you've tracked from the feed</div></div></div>
+      <div class="applist" id="appList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- no access -->
+<div id="noAccessScreen" class="hide">
+  <div class="appbar"><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.4" fill="#fff"/><circle cx="18" cy="7" r="2.4" fill="#fff"/><circle cx="12" cy="17" r="2.4" fill="#fff"/></svg></span><span class="wordmark">Jobra<b> AI</b></span></div><div class="right"><button class="btn btn-ghost" id="signOutBtn2">Sign out</button></div></div>
+  <div class="state"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg></div><h2>Your membership isn't active yet</h2><p>You're signed in as <b id="noAccessEmail"></b>, but this email isn't an active member yet. Once activated, your tailored feed appears here automatically.</p></div>
+</div>
+
+<!-- return-from-posting prompt -->
+<div class="applytoast" id="applyToast">
+  <button class="at-x" id="atClose" aria-label="Dismiss">&times;</button>
+  <div class="at-q">Did you apply to <span id="atTitle"></span>?</div>
+  <div class="at-btns"><button class="at-yes" id="atYes">Yes, mark applied</button><button id="atNo">Not yet</button></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+const cfg = JOBRA_CONFIG;
+const DEMO = !cfg.SUPABASE_URL || cfg.SUPABASE_URL.startsWith("YOUR_");
+let sb = null;
+if (!DEMO) sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const SESSION_MAX_MS = 30*24*60*60*1000; // log members out after 30 days
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
+
+const $ = (id)=>document.getElementById(id);
+const screens = { auth:$("authScreen"), feed:$("feedScreen"), noAccess:$("noAccessScreen") };
+function show(n){ Object.entries(screens).forEach(([k,el])=>el.classList.toggle("hide",k!==n)); }
+
+let allJobs = [], currentEmail = null, resume = null;
+const filters = { q:"", country:"all", cat:"all", seniority:"all", sort:"recent" };
+
+/* ---------------- dictionaries ---------------- */
+const SKILLS = ["javascript","typescript","python","java","c++","c#",".net","go","golang","rust","ruby","php","scala","kotlin","swift","react","react native","angular","vue","svelte","next.js","node.js","express","django","flask","fastapi","spring","rails","laravel",".net core","graphql","rest","grpc","html","css","tailwind","sass","redux","aws","azure","gcp","google cloud","kubernetes","docker","terraform","ansible","jenkins","github actions","gitlab ci","ci/cd","helm","prometheus","grafana","linux","bash","nginx","kafka","rabbitmq","redis","postgresql","mysql","mongodb","dynamodb","elasticsearch","snowflake","spark","hadoop","airflow","dbt","etl","sql","nosql","pandas","numpy","tensorflow","pytorch","scikit-learn","machine learning","deep learning","nlp","llm","data analysis","tableau","power bi","cybersecurity","penetration testing","pentest","siem","soc","incident response","threat intelligence","vulnerability","owasp","nist","iso 27001","soc 2","firewall","ids","ips","encryption","pki","iam","zero trust","splunk","wireshark","metasploit","burp suite","nmap","kali","endpoint security","cloud security","appsec","devsecops","malware analysis","forensics","compliance","risk assessment","microservices","serverless","lambda","rabbit","agile","scrum","jira","git","oauth","jwt","sso","saml"];
+const INDUSTRIES = ["fintech","finance","banking","healthcare","health","insurance","ecommerce","e-commerce","retail","gaming","education","edtech","government","defense","aerospace","telecom","saas","manufacturing","logistics","automotive","media","advertising","cybersecurity","biotech","energy","real estate","travel","hospitality"];
+const ACTION_VERBS = ["led","built","designed","developed","implemented","architected","launched","shipped","automated","optimized","reduced","increased","improved","scaled","migrated","deployed","created","delivered","managed","drove","spearheaded","engineered","streamlined","mentored"];
+
+/* ---------------- parsing helpers ---------------- */
+function normForSkills(t){ return (" "+t.toLowerCase().replace(/[^a-z0-9+#.\/ -]/g," ").replace(/\s+/g," ")+" "); }
+function extractSkills(text){ const p=normForSkills(text); const found=[]; for(const s of SKILLS){ if(p.includes(" "+s+" ")) found.push(s); } return [...new Set(found)]; }
+function extractIndustries(text){ const p=normForSkills(text); const f=[]; for(const s of INDUSTRIES){ if(p.includes(" "+s+" ")) f.push(s);} return [...new Set(f)]; }
+function detectYears(text){
+  let max=0; const re=/(\d{1,2})\s*\+?\s*years?/gi; let m;
+  while((m=re.exec(text))){ const n=+m[1]; if(n<=45&&n>max) max=n; }
+  if(max) return max;
+  const yrs=[...text.matchAll(/\b(19[89]\d|20[0-2]\d)\b/g)].map(x=>+x[0]);
+  if(yrs.length>=2){ const span=Math.max(...yrs)-Math.min(...yrs); if(span>0&&span<=30) return span; }
+  return null;
+}
+const LEVELS=["intern","junior","mid","senior","lead"];
+function detectSeniority(text,years){
+  const t=text.toLowerCase(); let lvl=null;
+  if(/\b(intern|internship|co-?op)\b/.test(t)) lvl="intern";
+  if(/\b(junior|jr\.?|entry[- ]level|new grad|graduate)\b/.test(t)) lvl=lvl||"junior";
+  if(/\b(principal|staff|lead|architect|head of|director|vp|chief)\b/.test(t)) lvl="lead";
+  else if(/\b(senior|sr\.?|tech lead)\b/.test(t)) lvl=lvl||"senior";
+  let byYears=null;
+  if(years!=null){ byYears = years>=12?"lead":years>=7?"senior":years>=4?"mid":years>=1?"junior":"intern"; }
+  if(lvl&&byYears) return LEVELS[Math.max(LEVELS.indexOf(lvl),LEVELS.indexOf(byYears))];
+  return lvl||byYears||"mid";
+}
+function freq(text){ const map={}; for(const w of normForSkills(text).split(" ")){ if(w.length>2) map[w]=(map[w]||0)+1; } return map; }
+function cosine(a,b){ let dot=0,na=0,nb=0; for(const k in a){ na+=a[k]*a[k]; if(b[k]) dot+=a[k]*b[k]; } for(const k in b) nb+=b[k]*b[k]; return (na&&nb)? dot/(Math.sqrt(na)*Math.sqrt(nb)) : 0; }
+
+/* ---------------- scoring ---------------- */
+function scoreJob(job){
+  if(!resume) return null;
+  const jt = `${job.title} ${job.description||""} ${job.category||""}`;
+  const jSkills = extractSkills(jt);
+  const jInd = extractIndustries(jt);
+  // skill
+  let skill;
+  if(jSkills.length===0) skill=62;
+  else { const matched=jSkills.filter(s=>resume.skillSet.has(s)).length; skill=Math.round(35+65*(matched/jSkills.length)); }
+  // experience
+  const ri=LEVELS.indexOf(resume.seniority), ji=LEVELS.indexOf(job.seniority||"mid");
+  let exp;
+  if(ri<0||ji<0) exp=60;
+  else { const d=Math.abs(ri-ji); exp = ri>=ji ? [100,86,70,54,42][Math.min(d,4)] : [100,72,50,34,22][Math.min(d,4)]; }
+  // industry
+  let ind;
+  if(jInd.length===0) ind=60;
+  else if(resume.industries.length===0) ind=54;
+  else { const matched=jInd.filter(s=>resume.industries.includes(s)).length; ind=Math.round(45+55*(matched/jInd.length)); }
+  // text similarity
+  const txt=Math.min(100, Math.round(cosine(resume.freq, freq(jt))*185));
+  const overall=Math.round(0.42*skill+0.24*exp+0.18*ind+0.16*txt);
+  return { overall:Math.min(99,Math.max(28,overall)), skill, exp, ind };
+}
+function scoreAll(){ for(const j of allJobs) j.match = scoreJob(j); }
+
+/* ---------------- rendering ---------------- */
+function timeAgo(iso){ if(!iso) return ""; const h=Math.round((Date.now()-new Date(iso))/36e5); if(h<1) return "just now"; if(h<24) return h+"h ago"; return Math.round(h/24)+"d ago"; }
+function money(j){ if(!j.salary_min&&!j.salary_max) return null; const f=n=>n>=1000?Math.round(n/1000)+"k":n; const sym=j.currency==="CAD"?"C$":"$"; return j.salary_min&&j.salary_max?`${sym}${f(j.salary_min)}–${f(j.salary_max)}`:`${sym}${f(j.salary_min||j.salary_max)}`; }
+const CAT={software:"Software",cybersecurity:"Cybersecurity",data:"Data / ML",devops:"DevOps / Cloud",it:"IT"};
+function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
+function color(v){ return v>=78?"var(--ok)":v>=55?"var(--amber)":"var(--faint)"; }
+
+function ring(v){
+  const c=color(v), C=2*Math.PI*18, off=C*(1-v/100);
+  return `<svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--bg-soft)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle">${v}</text></svg>`;
+}
+function jobCard(j,i){
+  const isNew=j.posted_at&&(Date.now()-new Date(j.posted_at))<24*36e5;
+  const pay=money(j), init=(j.company||"·").trim()[0].toUpperCase();
+  const m=j.match;
+  return `<article class="job" style="animation-delay:${Math.min(i*35,400)}ms">
+    <div class="top">
+      <div class="co"><div class="avatar">${esc(init)}</div><div><h3>${esc(j.title)}</h3><div class="company">${esc(j.company||"Company confidential")}</div></div></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        ${m?`<div class="matchpill" onclick="this.closest('.job').querySelector('.subscores').classList.toggle('open')">${ring(m.overall)}<div class="ml">match<br><b style="color:${color(m.overall)}">${m.overall}%</b></div></div>`:""}
+        <div class="when ${isNew?'new':''}">${isNew?'● ':''}${timeAgo(j.posted_at)}</div>
+      </div>
+    </div>
+    <div class="tags">
+      ${j.category?`<span class="tag cat">${esc(CAT[j.category]||j.category)}</span>`:""}
+      <span class="tag loc">${esc(j.location||(j.country==="CA"?"Canada":"United States"))}</span>
+      ${j.is_remote?`<span class="tag remote">Remote</span>`:""}
+      ${j.seniority&&j.seniority!=="unknown"?`<span class="tag">${esc(j.seniority)}</span>`:""}
+      ${pay?`<span class="tag pay">${esc(pay)}</span>`:""}
+    </div>
+    ${m?`<div class="subscores">
+      ${subBar("Skill match",m.skill)}${subBar("Experience level",m.exp)}${subBar("Industry match",m.ind)}
+    </div>`:""}
+    <a class="go" href="${esc(j.url||'#')}" target="_blank" rel="noopener" onclick="return onJobClick('${j.id}')">View role <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  </article>`;
+}
+function subBar(label,v){ return `<div class="sub"><div class="lab">${label}<b>${v}%</b></div><div class="bar"><i style="width:${v}%;background:${color(v)}"></i></div></div>`; }
+
+function applyFilters(){
+  const q=filters.q.toLowerCase();
+  let out=allJobs.filter(j=>{
+    if(filters.country==="remote"&&!j.is_remote) return false;
+    if(filters.country!=="all"&&filters.country!=="remote"&&j.country!==filters.country) return false;
+    if(filters.cat!=="all"&&j.category!==filters.cat) return false;
+    if(filters.seniority!=="all"&&j.seniority!==filters.seniority) return false;
+    if(q&&!`${j.title} ${j.company} ${j.location}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(filters.sort==="match"&&resume) out=[...out].sort((a,b)=>(b.match?.overall||0)-(a.match?.overall||0));
+  else out=[...out].sort((a,b)=>new Date(b.posted_at||0)-new Date(a.posted_at||0));
+  const list=$("jobsList");
+  list.innerHTML = out.length? out.map(jobCard).join("") : `<div class="state" style="margin:30px auto"><h2>No matches</h2><p>Try widening your filters. New roles arrive every hour.</p></div>`;
+  const fresh=allJobs.filter(j=>j.posted_at&&(Date.now()-new Date(j.posted_at))<24*36e5).length;
+  $("feedCount").innerHTML=`<span class="fresh-dot"></span>Showing <b>${out.length}</b> roles. ${fresh} new in the last 24 hours.${resume?" Ranked for you.":""}`;
+  renderGlance();
+}
+
+function renderGlance(){
+  const el=$("glance"); if(!el) return;
+  if(!resume){
+    el.innerHTML=`<div class="gl-cta" onclick="document.querySelector('.tab[data-tab=resume]').click()"><div><b>Upload your resume</b> to unlock personalized matches and ranking.</div><span class="gl-arrow">&rarr;</span></div>`;
+    el.classList.remove("hide"); return;
+  }
+  const dayAgo=Date.now()-24*36e5;
+  const newMatches=allJobs.filter(j=>j.match&&j.match.overall>=70&&j.posted_at&&(new Date(j.posted_at)>dayAgo)).length;
+  const top=[...allJobs].filter(j=>j.match).sort((a,b)=>b.match.overall-a.match.overall)[0];
+  const applied=appliedList.filter(a=>a.status==="applied").length;
+  const interviewing=appliedList.filter(a=>a.status==="interviewing").length;
+  el.innerHTML=`
+    <div class="gl-seg"><div class="gl-num">${newMatches}</div><div class="gl-lab">new strong matches today</div></div>
+    ${top?`<a class="gl-seg gl-top" href="${esc(top.url||'#')}" target="_blank" rel="noopener" onclick="return onJobClick('${top.id}')"><div class="gl-toprow"><span class="gl-pct" style="color:${color(top.match.overall)}">${top.match.overall}%</span><span class="gl-arrow">&rarr;</span></div><div class="gl-lab gl-clip">top match: ${esc(top.title)}</div></a>`:""}
+    <div class="gl-seg"><div class="gl-num">${applied}<span class="gl-sub"> applied</span> &middot; ${interviewing}<span class="gl-sub"> interviewing</span></div><div class="gl-lab">your pipeline</div></div>`;
+  el.classList.remove("hide");
+}
+
+/* ---------------- resume analysis ---------------- */
+async function parseFile(file){
+  const name=file.name.toLowerCase();
+  if(name.endsWith(".pdf")){
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise; let txt="";
+    for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const c=await page.getTextContent(); txt+=c.items.map(i=>i.str).join(" ")+"\n"; }
+    return txt;
+  }
+  if(name.endsWith(".docx")){ const buf=await file.arrayBuffer(); const r=await mammoth.extractRawText({arrayBuffer:buf}); return r.value; }
+  return await file.text();
+}
+function buildResume(text){
+  const skills=extractSkills(text), industries=extractIndustries(text);
+  const years=detectYears(text), seniority=detectSeniority(text,years);
+  return { text, skills, skillSet:new Set(skills), industries, years, seniority, freq:freq(text) };
+}
+function renderProfile(){
+  $("uploadCard").classList.add("hide"); $("profileBlock").classList.remove("hide");
+  const r=resume;
+  $("profMeta").innerHTML=`
+    <div class="pm"><div class="k">${r.seniority[0].toUpperCase()+r.seniority.slice(1)}</div><div class="v">level</div></div>
+    <div class="pm"><div class="k">${r.years!=null?r.years+"+":"n/a"}</div><div class="v">years exp</div></div>
+    <div class="pm"><div class="k">${r.skills.length}</div><div class="v">skills found</div></div>
+    <div class="pm"><div class="k">${r.industries.length||"0"}</div><div class="v">industries</div></div>`;
+  $("profSkills").innerHTML = r.skills.length? r.skills.slice(0,30).map(s=>`<span class="sc">${esc(s)}</span>`).join("") : `<span class="hint">No known tech skills detected. Try pasting the full text.</span>`;
+  renderChecks(); renderGaps();
+}
+function renderChecks(){
+  const t=resume.text, words=t.split(/\s+/).filter(Boolean).length;
+  const hasEmail=/[\w.+-]+@[\w-]+\.[\w.-]+/.test(t), hasPhone=/(\+?\d[\d\s().-]{7,})/.test(t);
+  const quant=(t.match(/\d+%|\$\s?\d|\b\d{2,}\b/g)||[]).length;
+  const verbs=ACTION_VERBS.filter(v=>new RegExp("\\b"+v+"\\b","i").test(t)).length;
+  const C=[
+    [words>=350&&words<=900, "Length", words<350?`Only about ${words} words. Add more detail.`:words>900?`About ${words} words. Consider trimming.`:`About ${words} words. Good length.`],
+    [hasEmail&&hasPhone, "Contact info", hasEmail&&hasPhone?"Email & phone present.":"Add both an email and phone number."],
+    [quant>=4, "Quantified impact", quant>=4?`${quant} metrics found. Looks great.`:`Only ${quant} numbers. Quantify more results like %, $, or scale.`],
+    [verbs>=6, "Action verbs", verbs>=6?`${verbs} strong verbs used.`:"Start bullets with strong verbs (led, built, reduced…)."],
+    [resume.skills.length>=8, "Skill coverage", resume.skills.length>=8?`${resume.skills.length} recognized skills.`:"List more concrete tools & technologies."],
+  ];
+  $("checks").innerHTML=C.map(([ok,t1,d])=>`<div class="chk ${ok?'pass':'warn'}"><div class="ico">${ok?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5v.5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'}</div><div><div class="t">${t1}</div><div class="d">${esc(d)}</div></div></div>`).join("");
+}
+function renderGaps(){
+  const tally={};
+  for(const j of allJobs){ if(j.match&&j.match.overall>=45){ for(const s of extractSkills(`${j.title} ${j.description||""}`)){ if(!resume.skillSet.has(s)) tally[s]=(tally[s]||0)+1; } } }
+  const top=Object.entries(tally).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
+  $("gaps").innerHTML = top.length? top.map(s=>`<span class="g">${esc(s)}</span>`).join("") : `<span class="hint">Nice. Your skills already cover your top matches.</span>`;
+}
+
+/* AI tailoring */
+async function aiTailor(){
+  const out=$("aiOut"), btn=$("aiBtn");
+  const top=[...allJobs].filter(j=>j.match).sort((a,b)=>b.match.overall-a.match.overall).slice(0,5);
+  const targets=top.map(j=>`${j.title} (skills: ${extractSkills(j.title+" "+(j.description||"")).slice(0,6).join(", ")})`).join("; ");
+  const prompt=`You are an expert tech resume coach. Based on the candidate resume and their top target roles, write: (1) a sharp 2-sentence professional summary, and (2) five tailored, quantified resume bullet points that better target these roles. Be concise and specific.\n\nTOP TARGET ROLES: ${targets}\n\nRESUME:\n${resume.text.slice(0,6000)}`;
+  out.textContent=""; btn.textContent="Generating…"; btn.disabled=true;
+  try{
+    let text="";
+    if(cfg.AI_REFINE_ENDPOINT){
+      const r=await fetch(cfg.AI_REFINE_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+      const d=await r.json(); text=d.text||d.output||JSON.stringify(d);
+    }else{
+      // Works inside the Claude.ai preview (no key needed). In production, set AI_REFINE_ENDPOINT.
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const d=await r.json(); text=(d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    }
+    out.textContent = text || "No suggestions returned.";
+  }catch(e){
+    out.textContent="AI tailoring isn't set up on this site yet. It works in the preview. To enable it live, connect a free Gemini or Groq endpoint (see the README).";
+  }
+  btn.textContent="Generate tailored suggestions"; btn.disabled=false;
+}
+
+/* ---------------- resume wiring ---------------- */
+let pendingText=null;
+async function handleFile(file){
+  $("resumeErr").textContent="";
+  try{ pendingText=await parseFile(file); $("pasteBox").value=pendingText.slice(0,4000); }
+  catch(e){ $("resumeErr").textContent="Couldn't read that file. Try a .docx or paste the text instead."; }
+}
+$("drop").addEventListener("click",()=>$("fileInput").click());
+$("drop").addEventListener("dragover",e=>{e.preventDefault();e.currentTarget.classList.add("over");});
+$("drop").addEventListener("dragleave",e=>e.currentTarget.classList.remove("over"));
+$("drop").addEventListener("drop",e=>{e.preventDefault();e.currentTarget.classList.remove("over");if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+$("fileInput").addEventListener("change",e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+$("analyzeBtn").addEventListener("click",async ()=>{
+  const text=(pendingText||$("pasteBox").value||"").trim();
+  if(text.length<60){ $("resumeErr").textContent="Please upload a resume or paste at least a few lines."; return; }
+  resume=buildResume(text);
+  scoreAll(); renderProfile(); filters.sort="match"; $("sortBy").value="match"; applyFilters();
+  if(!DEMO&&currentEmail){ try{ await sb.from("profiles").upsert({email:currentEmail,resume_text:text,skills:resume.skills,years_experience:resume.years,seniority:resume.seniority,industries:resume.industries,updated_at:new Date().toISOString()},{onConflict:"email"}); }catch(_){} }
+});
+$("reupload").addEventListener("click",()=>{ resume=null; pendingText=null; $("pasteBox").value=""; $("profileBlock").classList.add("hide"); $("uploadCard").classList.remove("hide"); scoreAll(); applyFilters(); });
+$("aiBtn").addEventListener("click",aiTailor);
+
+/* ---------------- tabs + filters ---------------- */
+document.querySelector(".tabs").addEventListener("click",e=>{
+  const b=e.target.closest(".tab"); if(!b) return;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active")); b.classList.add("active");
+  const tab=b.dataset.tab;
+  $("feedView").classList.toggle("hide",tab!=="feed");
+  $("resumeView").classList.toggle("hide",tab!=="resume");
+  $("appliedView").classList.toggle("hide",tab!=="applied");
+  if(tab==="applied") renderApplied();
+});
+$("searchInput").addEventListener("input",e=>{filters.q=e.target.value;applyFilters();});
+$("seniority").addEventListener("change",e=>{filters.seniority=e.target.value;applyFilters();});
+$("sortBy").addEventListener("change",e=>{filters.sort=e.target.value;applyFilters();});
+$("countryChips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;[...e.currentTarget.children].forEach(c=>c.classList.remove("active"));b.classList.add("active");filters.country=b.dataset.country;applyFilters();});
+$("catChips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;[...e.currentTarget.children].forEach(c=>c.classList.remove("active"));b.classList.add("active");filters.cat=b.dataset.cat;applyFilters();});
+
+/* ---------------- auth ---------------- */
+$("loginBtn").addEventListener("click",async ()=>{
+  const email=$("email").value.trim(), errEl=$("loginErr"); errEl.textContent="";
+  if(DEMO){ enterFeed(email||"demo@jobra.ai", DEMO_JOBS); return; }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ errEl.textContent="Please enter a valid email."; return; }
+  $("loginBtn").textContent="Sending…"; $("loginBtn").disabled=true;
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname}});
+  $("loginBtn").textContent="Send me a sign-in link"; $("loginBtn").disabled=false;
+  if(error){ errEl.textContent=error.message; return; }
+  $("sentTo").textContent=email; $("loginForm").classList.add("hide"); $("sentState").style.display="block";
+});
+["signOutBtn","signOutBtn2"].forEach(id=>$(id)&&$(id).addEventListener("click",async ()=>{ lsDel("jobra_login_at"); if(!DEMO&&sb)await sb.auth.signOut(); location.reload(); }));
+
+/* ---------------- payments ---------------- */
+const STRIPE_LINKS={monthly:cfg.STRIPE_LINK_MONTHLY,quarterly:cfg.STRIPE_LINK_QUARTERLY,yearly:cfg.STRIPE_LINK_YEARLY};
+document.querySelectorAll(".pbtn").forEach(b=>b.addEventListener("click",()=>{
+  const link=STRIPE_LINKS[b.dataset.plan];
+  if(link) window.location.href=link;
+  else alert("This plan's Stripe payment link isn't set yet. Add it in the JOBRA_CONFIG block at the top of this file (see the README).");
+}));
+$("manageBtn").addEventListener("click",()=>{ if(cfg.STRIPE_PORTAL_URL) window.open(cfg.STRIPE_PORTAL_URL,"_blank","noopener"); });
+
+/* sign-in modal */
+function openSignin(){ $("signinModal").classList.remove("hide"); setTimeout(()=>$("email").focus(),100); }
+function closeSignin(){ $("signinModal").classList.add("hide"); }
+$("navSignin").addEventListener("click",openSignin);
+$("paynoteSignin").addEventListener("click",openSignin);
+$("signinClose").addEventListener("click",closeSignin);
+$("signinModal").addEventListener("click",e=>{ if(e.target.id==="signinModal") closeSignin(); });
+
+/* ---------------- applied tracker ---------------- */
+let appliedList=[], pendingApply=null, promptShown=false;
+const ST_LABEL={saved:"Saved",applied:"Applied",interviewing:"Interviewing",offer:"Offer",rejected:"Rejected"};
+
+window.onJobClick=function(id){
+  const j=allJobs.find(x=>x.id===id); if(!j) return true;
+  pendingApply=j; promptShown=false;
+  if(DEMO || !j.url || j.url==="#"){ setTimeout(()=>{ promptShown=false; maybePrompt(); },700); return false; }
+  return true;
+};
+function renderAppCount(){ const el=$("appCount"); el.textContent=appliedList.length; el.classList.toggle("hide",appliedList.length===0); }
+function renderApplied(){
+  const list=$("appList");
+  if(!appliedList.length){ list.innerHTML=`<div class="state" style="margin:20px auto"><h2>Nothing tracked yet</h2><p>Open a role from your feed and, when you come back, mark whether you applied. It shows up here.</p></div>`; return; }
+  const sorted=[...appliedList].sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0));
+  list.innerHTML=sorted.map(a=>`<div class="appitem">
+    <div class="ai-main"><h4>${esc(a.title||"Role")}</h4><div class="ai-co">${esc(a.company||"")}${a.location?" · "+esc(a.location):""}</div><div class="ai-when">updated ${timeAgo(a.updated_at)}</div></div>
+    <select class="statussel" onchange="setAppStatus('${esc(a.job_id)}',this.value)">${Object.keys(ST_LABEL).map(s=>`<option value="${s}"${a.status===s?" selected":""}>${ST_LABEL[s]}</option>`).join("")}</select>
+    ${a.url&&a.url!=="#"?`<a class="ai-link" href="${esc(a.url)}" target="_blank" rel="noopener">Open</a>`:""}
+    <button class="ai-del" onclick="removeApp('${esc(a.job_id)}')">Remove</button>
+  </div>`).join("");
+}
+async function addApplication(job,status){
+  const row={job_id:job.id,title:job.title,company:job.company,url:job.url,location:job.location,status,updated_at:new Date().toISOString()};
+  const i=appliedList.findIndex(a=>a.job_id===job.id);
+  if(i>=0) appliedList[i]={...appliedList[i],...row}; else appliedList.push(row);
+  renderAppCount(); renderApplied(); renderGlance();
+  if(!DEMO&&currentEmail){ try{ await sb.from("applications").upsert({email:currentEmail,...row},{onConflict:"email,job_id"}); }catch(_){} }
+}
+window.setAppStatus=async function(jobId,status){
+  const a=appliedList.find(x=>x.job_id===jobId); if(!a) return;
+  a.status=status; a.updated_at=new Date().toISOString(); renderApplied(); renderGlance();
+  if(!DEMO&&currentEmail){ try{ await sb.from("applications").update({status,updated_at:a.updated_at}).eq("email",currentEmail).eq("job_id",jobId); }catch(_){} }
+};
+window.removeApp=async function(jobId){
+  appliedList=appliedList.filter(a=>a.job_id!==jobId); renderAppCount(); renderApplied(); renderGlance();
+  if(!DEMO&&currentEmail){ try{ await sb.from("applications").delete().eq("email",currentEmail).eq("job_id",jobId); }catch(_){} }
+};
+function maybePrompt(){ if(pendingApply&&!promptShown){ promptShown=true; $("atTitle").textContent=pendingApply.title||"that role"; $("applyToast").classList.add("show"); } }
+function hideToast(){ $("applyToast").classList.remove("show"); }
+window.addEventListener("focus",()=>setTimeout(maybePrompt,250));
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") setTimeout(maybePrompt,250); });
+$("atYes").addEventListener("click",()=>{ if(pendingApply) addApplication(pendingApply,"applied"); pendingApply=null; hideToast(); });
+$("atNo").addEventListener("click",()=>{ if(pendingApply) addApplication(pendingApply,"saved"); pendingApply=null; hideToast(); });
+$("atClose").addEventListener("click",()=>{ pendingApply=null; hideToast(); });
+
+function enterFeed(email,jobs){ currentEmail=email; $("userEmail").textContent=email; allJobs=jobs; scoreAll(); show("feed"); applyFilters(); renderAppCount(); }
+async function loadRealFeed(session){
+  const email=session.user.email; show("feed"); $("userEmail").textContent=email; currentEmail=email;
+  $("jobsList").innerHTML=Array(4).fill('<div class="skeleton"></div>').join("");
+  const {data:sub}=await sb.from("subscribers").select("status").eq("email",email.toLowerCase()).maybeSingle();
+  if(!sub||sub.status!=="active"){ $("noAccessEmail").textContent=email; show("noAccess"); return; }
+  if(cfg.STRIPE_PORTAL_URL) $("manageBtn").classList.remove("hide");
+  const {data:prof}=await sb.from("profiles").select("*").eq("email",email.toLowerCase()).maybeSingle();
+  if(prof&&prof.resume_text){ resume=buildResume(prof.resume_text); renderProfile(); filters.sort="match"; $("sortBy").value="match"; }
+  const {data:jobs,error}=await sb.from("jobs").select("*").order("posted_at",{ascending:false}).limit(150);
+  if(error){ $("jobsList").innerHTML=`<div class="state"><h2>Couldn't load jobs</h2><p>${esc(error.message)}</p></div>`; return; }
+  allJobs=jobs||[]; scoreAll(); applyFilters();
+  try{ const {data:apps}=await sb.from("applications").select("*").eq("email",email.toLowerCase()); appliedList=apps||[]; }catch(_){ appliedList=[]; }
+  renderAppCount();
+}
+
+/* ---------------- demo data ---------------- */
+function hrsAgo(h){ return new Date(Date.now()-h*36e5).toISOString(); }
+const DEMO_JOBS=[
+  {id:"d1",title:"Senior Software Engineer, Platform",company:"Northwind Labs",location:"San Francisco, CA",country:"US",is_remote:false,category:"software",seniority:"senior",salary_min:165000,salary_max:210000,currency:"USD",url:"#",posted_at:hrsAgo(2),description:"Build distributed backend services in Go and Python on AWS with Kubernetes, Terraform, microservices, postgresql and kafka."},
+  {id:"d2",title:"Cybersecurity Analyst (SOC)",company:"Sentinel Security",location:"Toronto, ON",country:"CA",is_remote:true,category:"cybersecurity",seniority:"mid",salary_min:95000,salary_max:120000,currency:"CAD",url:"#",posted_at:hrsAgo(4),description:"SOC analyst role: SIEM, Splunk, incident response, threat intelligence, vulnerability management, NIST and SOC 2 compliance."},
+  {id:"d3",title:"DevOps Engineer",company:"Cloudpeak",location:"Remote (US)",country:"US",is_remote:true,category:"devops",seniority:"mid",salary_min:130000,salary_max:160000,currency:"USD",url:"#",posted_at:hrsAgo(7),description:"CI/CD with GitHub Actions, Docker, Kubernetes, Terraform, AWS, Prometheus and Grafana for a fintech platform."},
+  {id:"d4",title:"Machine Learning Engineer",company:"Vector AI",location:"New York, NY",country:"US",is_remote:false,category:"data",seniority:"senior",salary_min:180000,salary_max:230000,currency:"USD",url:"#",posted_at:hrsAgo(11),description:"PyTorch, TensorFlow, Python, Spark, Airflow, machine learning and deep learning, NLP and LLM systems in healthcare."},
+  {id:"d5",title:"Junior Frontend Developer",company:"Brightside",location:"Vancouver, BC",country:"CA",is_remote:false,category:"software",seniority:"junior",salary_min:70000,salary_max:90000,currency:"CAD",url:"#",posted_at:hrsAgo(20),description:"React, TypeScript, Next.js, Tailwind, REST and GraphQL for an ecommerce product."},
+  {id:"d6",title:"Penetration Tester",company:"RedShield",location:"Remote (Canada)",country:"CA",is_remote:true,category:"cybersecurity",seniority:"senior",salary_min:120000,salary_max:150000,currency:"CAD",url:"#",posted_at:hrsAgo(28),description:"Penetration testing, Burp Suite, Metasploit, Nmap, OWASP, appsec and cloud security for finance clients."},
+  {id:"d7",title:"Site Reliability Engineer",company:"Tempo Systems",location:"Austin, TX",country:"US",is_remote:false,category:"devops",seniority:"senior",salary_min:155000,salary_max:195000,currency:"USD",url:"#",posted_at:hrsAgo(40),description:"Linux, Kubernetes, Terraform, AWS, Prometheus, Grafana, bash, reliability and observability."},
+  {id:"d8",title:"Data Engineer",company:"Harbor Analytics",location:"Remote (US)",country:"US",is_remote:true,category:"data",seniority:"mid",salary_min:135000,salary_max:165000,currency:"USD",url:"#",posted_at:hrsAgo(52),description:"SQL, Python, Snowflake, dbt, Airflow, Spark, ETL pipelines on GCP."},
+];
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  if(new URLSearchParams(location.search).get("subscribed")){ $("paidBanner").style.display="flex"; setTimeout(openSignin,500); }
+  if(DEMO){ $("demoBanner").style.display="flex"; show("auth"); return; }
+  // a fresh magic-link arrival resets the 30-day clock
+  if(location.hash.includes("access_token")||location.search.includes("code=")) lsSet("jobra_login_at",String(Date.now()));
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){
+    if(!lsGet("jobra_login_at")) lsSet("jobra_login_at",String(Date.now()));
+    const started=parseInt(lsGet("jobra_login_at")||"0",10);
+    if(started && Date.now()-started>SESSION_MAX_MS){ lsDel("jobra_login_at"); await sb.auth.signOut(); show("auth"); return; }
+    loadRealFeed(session);
+  } else show("auth");
+  sb.auth.onAuthStateChange((ev,s)=>{ if(ev==="SIGNED_IN") lsSet("jobra_login_at",lsGet("jobra_login_at")||String(Date.now())); if(s) loadRealFeed(s); });
+}
+boot();
+
+/* ── Hero canvas particle animation ── */
+(function(){
+  const canvas=document.getElementById("heroCanvas");
+  if(!canvas) return;
+  const ctx=canvas.getContext("2d");
+  let W,H,nodes=[];
+  function resize(){ W=canvas.width=canvas.offsetWidth; H=canvas.height=canvas.offsetHeight; }
+  window.addEventListener("resize",resize); resize();
+  const COUNT=55;
+  for(let i=0;i<COUNT;i++) nodes.push({
+    x:Math.random()*W, y:Math.random()*H,
+    vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35,
+    r:Math.random()*2+1.2
+  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+    });
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<130){
+          ctx.beginPath();
+          ctx.strokeStyle=`rgba(100,150,255,${.18*(1-d/130)})`;
+          ctx.lineWidth=.8;
+          ctx.moveTo(nodes[i].x,nodes[i].y);
+          ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    nodes.forEach(n=>{
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle="rgba(120,170,255,.55)";
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── Scroll reveal for feature sections ── */
+(function(){
+  const els=document.querySelectorAll(".reveal");
+  if(!("IntersectionObserver" in window)){ els.forEach(e=>e.classList.add("in")); return; }
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+  },{threshold:.18});
+  els.forEach(e=>io.observe(e));
+})();
+
+/* ── Footer links ── */
+(function(){
+  function toPricing(){
+    const target=document.getElementById("planFeatured")||document.getElementById("pricing");
+    if(target){ target.scrollIntoView({behavior:"smooth",block:"center"}); }
+    const card=document.getElementById("planFeatured");
+    const btn=card?card.querySelector(".pbtn"):null;
+    if(card){ card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); }
+    if(btn){ btn.classList.remove("flash"); void btn.offsetWidth; btn.classList.add("flash"); }
+  }
+  const fc=document.getElementById("footCta");
+  if(fc) fc.addEventListener("click",toPricing);
+  document.querySelectorAll("[data-scroll='pricing']").forEach(el=>el.addEventListener("click",toPricing));
+  const fs=document.getElementById("footSignin");
+  if(fs) fs.addEventListener("click",openSignin);
+  ["footPrivacy","footTerms"].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener("click",e=>e.preventDefault()); });
+})();
+</script>
+</body>
+</html>
